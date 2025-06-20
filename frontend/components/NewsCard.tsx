@@ -1,8 +1,10 @@
 "use client";
 
 import { format } from "date-fns";
-import { Calendar, User } from "lucide-react";
+import { Calendar, User, Camera } from "lucide-react";
 import { NewsArticle } from "@/lib/newsApi";
+import Image from "next/image";
+import Link from "next/link";
 
 interface NewsCardProps {
   article: NewsArticle;
@@ -10,6 +12,11 @@ interface NewsCardProps {
 }
 
 export default function NewsCard({ article, featured = false }: NewsCardProps) {
+  const { title, description, url, imageUrl, source, publishedAt } = article;
+  const date = publishedAt
+    ? new Date(publishedAt).toLocaleDateString()
+    : "Date not available";
+
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "MMM dd, yyyy");
@@ -38,70 +45,40 @@ export default function NewsCard({ article, featured = false }: NewsCardProps) {
   };
 
   return (
-    <article
-      className={`news-card ${featured ? "col-span-full md:col-span-2" : ""}`}
+    <Link
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 overflow-hidden group"
     >
-      <div className="relative">
-        <img
-          src={
-            article.urlToImage ||
-            "https://via.placeholder.com/400x250?text=No+Image"
-          }
-          alt={article.title}
-          className={`news-card-image ${featured ? "h-64" : "h-48"}`}
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = "https://via.placeholder.com/400x250?text=No+Image";
-          }}
-        />
-        {featured && (
-          <div className="absolute top-4 left-4">
-            <span className="bg-cnn-red text-white px-3 py-1 rounded-full text-sm font-semibold">
-              FEATURED
-            </span>
+      <div className="relative h-48 w-full">
+        {imageUrl ? (
+          <Image
+            src={imageUrl}
+            alt={title}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            style={{ objectFit: "cover" }}
+            className="transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+            <Camera className="h-12 w-12 text-gray-400" />
           </div>
         )}
       </div>
-
-      <div className="news-card-content">
-        <div className="flex items-center gap-2 mb-2">
-          <span
-            className={`category-badge ${getCategoryClass(
-              article.source.name
-            )}`}
-          >
-            {article.source.name}
-          </span>
-        </div>
-
-        <h3 className={`news-title ${featured ? "text-xl" : "text-lg"}`}>
-          <a
-            href={article.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-cnn-red transition-colors duration-200"
-          >
-            {article.title}
-          </a>
+      <div className="p-4 flex flex-col h-full">
+        <h3 className="font-bold mb-2 text-gray-800 text-lg leading-tight">
+          {title}
         </h3>
-
-        {article.description && (
-          <p className="news-description">{article.description}</p>
+        {description && (
+          <p className="text-gray-600 text-sm mb-4 flex-grow">{description}</p>
         )}
-
-        <div className="news-meta">
-          <div className="flex items-center gap-1">
-            <Calendar className="h-3 w-3" />
-            <span>{formatDate(article.publishedAt)}</span>
-          </div>
-          {article.author && (
-            <div className="flex items-center gap-1">
-              <User className="h-3 w-3" />
-              <span>{article.author}</span>
-            </div>
-          )}
+        <div className="flex justify-between items-center text-xs text-gray-500 mt-auto pt-4">
+          <span className="truncate pr-4">{source.name}</span>
+          <span className="flex-shrink-0">{date}</span>
         </div>
       </div>
-    </article>
+    </Link>
   );
 }

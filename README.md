@@ -1,177 +1,156 @@
 # NEWS Portal
 
-A modern news portal built with Next.js, TypeScript, and Tailwind CSS, inspired by CNN's design. This application fetches real-time news from NewsAPI and provides a beautiful, responsive interface for browsing the latest headlines with a commitment to accuracy and quality journalism.
+A modern news aggregation platform with AI-powered categorization, built with Next.js frontend and Python FastAPI backend.
 
 ## Features
 
-- 📰 **Real-time News**: Fetches latest news from NewsAPI
-- 🎨 **Modern UI**: Clean, responsive design inspired by CNN
-- 🔍 **Search Functionality**: Search for specific news topics
-- 📱 **Mobile Responsive**: Optimized for all device sizes
-- 🏷️ **Category Filtering**: Browse news by categories
-- ⚡ **Fast Performance**: Built with Next.js 14 and optimized for speed
-- 🌍 **Global Coverage**: World and US news with comprehensive coverage
+- **AI-Powered News Categorization**: Uses ChatGPT to automatically categorize articles into intelligent categories
+- **Real-time News Scraping**: Scrapes CNN for the latest news articles
+- **Article Sorting**: Sort articles by relevance, newest, or oldest on the homepage, category pages, and search results
+- **Smart Search**: Backend-powered search with instant results
+- **Dynamic Category Pages**: Dedicated pages for each news category
+- **Advanced Navigation**: The header displays a fixed set of categories (`World`, `Politics`, `Business`, `Sports`, `Entertainment`, `Technology`) and places additional topics like `Style`, `Travel`, `Health`, and more into a "More" dropdown menu.
+- **Responsive Design**: Modern, mobile-friendly interface
+- **Admin Dashboard**: Manage AI categorization and view statistics
 
-## Tech Stack
+## AI Categories
 
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Icons**: Lucide React
-- **Date Handling**: date-fns
-- **HTTP Client**: Axios
-- **News API**: NewsAPI.org
+The system automatically categorizes articles into these intelligent categories:
 
-## Getting Started
+- **World**: International news and global affairs
+- **Politics**: Political news and government affairs
+- **Business**: Business, economy, and financial news
+- **Sports**: Sports news and athletic events
+- **Entertainment**: Movies, TV, music, and celebrity news
+- **Technology**: Tech industry and innovation
+- **Style**: Fashion, design, and lifestyle
+- **Travel**: Travel news, guides, and destinations
+- **Science**: Scientific discoveries and research
+- **Climate**: News and information about climate change
+- **Weather**: Weather forecasts and natural events
+- **Health**: Healthcare and medical news
+- **Opinion**: Editorial content and opinion pieces
+- **Crime**: Crime and legal news
+- **Education**: Educational news and academic affairs
+- **Environment**: Environmental news and conservation
+- **General**: General news and miscellaneous content
+
+## Setup
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
+- Node.js 18+ and npm
+- Python 3.8+
+- OpenAI API key
 
 ### Installation
 
-1. Clone the repository:
+1. **Clone the repository**
 
 ```bash
 git clone <repository-url>
 cd news
 ```
 
-2. Install dependencies:
+2. **Setup Backend**
 
 ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+3. **Configure AI Categorization**
+   Create a `.env` file in the `backend` directory:
+
+   ```env
+   OPENAI_API_KEY=your_openai_api_key_here
+   OPENAI_MODEL=gpt-3.5-turbo
+   ```
+
+4. **Setup Frontend**
+   ```bash
+   cd ../frontend
 npm install
-# or
-yarn install
 ```
 
-3. Run the development server:
+### Running the Application
+
+1. **Start the Backend**
 
 ```bash
-npm run dev
-# or
-yarn dev
-```
+   cd backend
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   uvicorn main:app --reload
+   ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+   The backend will automatically categorize existing articles on startup if AI is available.
 
-## API Configuration
+2. **Start the Frontend**
 
-The app is already configured with the NewsAPI key: `8d500dfc964a4a52a337be5fc21f00dd`
+   ```bash
+   cd frontend
+   npm run dev
+   ```
 
-If you need to use your own API key:
+3. **Access the Application**
+   - Main site: http://localhost:3000
+   - Admin dashboard: http://localhost:3000/admin
+   - API documentation: http://localhost:8000/docs
 
-1. Get a free API key from [NewsAPI.org](https://newsapi.org/)
-2. Update the `NEWSAPI_KEY` constant in `lib/newsApi.ts`
+## Admin Dashboard
 
-## Project Structure
+Visit `/admin` to access the admin dashboard where you can:
 
-```
-news/
-├── app/                    # Next.js App Router
-│   ├── category/          # Category pages
-│   ├── search/            # Search functionality
-│   ├── test-simple/       # Simple API test page
-│   ├── globals.css        # Global styles
-│   ├── layout.tsx         # Root layout
-│   └── page.tsx           # Homepage
-├── components/            # React components
-│   ├── Header.tsx         # Navigation header
-│   ├── Footer.tsx         # Footer component
-│   └── NewsCard.tsx       # News article card
-├── lib/                   # Utility functions
-│   └── newsApi.ts         # NewsAPI service
-├── public/                # Static assets
-└── package.json           # Dependencies and scripts
-```
+- **Check AI Status**: Verify that AI categorization is working
+- **View Statistics**: See category distribution and AI coverage
+- **Categorize Articles**:
+  - Categorize existing uncategorized articles
+  - Re-categorize all articles with AI
+  - Scrape fresh news and categorize with AI
+- **Monitor Progress**: Track categorization progress and results
 
-## Available Scripts
+## API Endpoints
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
+### News Endpoints
 
-## Features in Detail
+- `GET /api/news` - Get top stories
+- `GET /api/news/all` - Get all articles
+- `GET /api/news/category/{category}` - Get articles by category
+- `GET /api/search?q={query}` - Search articles
 
-### Homepage
+All news-serving endpoints accept an optional `sortBy` query parameter (`relevance`, `newest`, `oldest`).
 
-- Featured news section with prominent display
-- Latest news grid layout
-- Business news sidebar
-- Responsive design for all screen sizes
-- Commitment to accuracy and quality journalism
+### AI Categorization Endpoints
 
-### Search
+- `GET /api/ai/status` - Check AI service status
+- `POST /api/ai/categorize` - Categorize all articles
+- `POST /api/ai/categorize-single` - Categorize single article
+- `POST /api/ai/suggest-categories` - Get category suggestions
+- `POST /api/scrape-with-ai` - Scrape and categorize with AI
+- `POST /api/trigger-initial-categorization` - Categorize uncategorized articles
 
-- Search across all news articles
-- Real-time search results
-- Clean search interface
+### Statistics Endpoints
 
-### Categories
+- `GET /api/categories` - Get all available categories
+- `GET /api/categories/stats` - Get category statistics
 
-- **World**: Global news from multiple countries
-- **Politics**: Political news and updates
-- **Business**: Business and financial news
-- **Technology**: Tech industry updates
-- **Health**: Health and medical news
-- **Entertainment**: Entertainment and culture
-- **Sports**: Sports news and updates
-- **Science**: Scientific discoveries and research
+## Automatic Categorization
 
-### News Cards
+The system automatically categorizes articles in several ways:
 
-- Article images with fallback
-- Source attribution
-- Publication date
-- Author information
-- Category badges
-- External links to full articles
+1. **Startup Categorization**: When the backend starts, it automatically categorizes any uncategorized articles
+2. **Scraping with AI**: New articles are automatically categorized when scraped
+3. **Manual Trigger**: Use the admin dashboard to trigger categorization manually
 
-## Styling
+## Architecture
 
-The app uses Tailwind CSS with custom CNN-inspired colors:
-
-- Primary Red: `#CC0000` (cnn-red)
-- Dark Background: `#1a1a1a` (cnn-dark)
-- Light Gray: `#f8f9fa` (cnn-gray)
-
-## Deployment
-
-### Vercel (Recommended)
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Deploy automatically
-
-### Other Platforms
-
-The app can be deployed to any platform that supports Next.js:
-
-- Netlify
-- Railway
-- DigitalOcean App Platform
-- AWS Amplify
-
-## API Usage
-
-The app uses NewsAPI's free tier which includes:
-
-- 1,000 requests per day
-- Top headlines endpoint
-- Everything endpoint
-- Sources endpoint
-- Multi-country news aggregation
-
-## Recent Updates
-
-- **Removed Kenya/Africa specific news sections** for broader global focus
-- **Removed US news category** to streamline navigation
-- **Eliminated NewsData.io integration** to simplify the codebase
-- **Updated branding** from "WebApp" to "Portal" for a more professional appearance
-- **Enhanced messaging** emphasizing commitment to accuracy and quality journalism
-- **Streamlined navigation** with World tab linking to homepage
+- **Frontend**: Next.js 14 with TypeScript and Tailwind CSS
+- **Backend**: FastAPI with Python
+- **AI**: OpenAI GPT-3.5-turbo for intelligent categorization
+- **Data Storage**: JSON file-based storage
+- **Scraping**: BeautifulSoup for web scraping
 
 ## Contributing
 
@@ -183,7 +162,7 @@ The app uses NewsAPI's free tier which includes:
 
 ## License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is licensed under the MIT License.
 
 ## Acknowledgments
 

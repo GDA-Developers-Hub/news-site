@@ -1,120 +1,118 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import NewsCard from "@/components/NewsCard";
-import { newsApi, NewsArticle } from "@/lib/newsApi";
+import { newsService, NewsArticle } from "@/lib/newsApi";
 import { notFound } from "next/navigation";
+import SortBy from "@/components/SortBy";
+import { Suspense } from "react";
+
+// The CATEGORY_MAP is now used just for display capitalization, if needed.
+const CATEGORY_MAP: { [key: string]: string } = {
+  world: "World",
+  politics: "Politics",
+  business: "Business",
+  sports: "Sports",
+  entertainment: "Entertainment",
+  technology: "Technology",
+  style: "Style",
+  travel: "Travel",
+  science: "Science",
+  climate: "Climate",
+  weather: "Weather",
+  health: "Health",
+  opinion: "Opinion",
+  general: "General",
+  crime: "Crime",
+  education: "Education",
+  environment: "Environment",
+};
 
 interface CategoryPageProps {
-  params: { category: string };
+  params: {
+    category: string;
+  };
+  searchParams: {
+    sortBy?: string;
+  };
 }
 
-const validCategories = [
-  "world",
-  "politics",
-  "business",
-  "technology",
-  "health",
-  "entertainment",
-  "sports",
-  "science",
-];
-
-// Categories that use special NewsAPI methods
-const specialCategories = ["world"];
-
-export default async function CategoryPage({ params }: CategoryPageProps) {
+export default async function CategoryPage({
+  params,
+  searchParams,
+}: CategoryPageProps) {
   const category = params.category.toLowerCase();
+  const sortBy = searchParams.sortBy || "publishedAt";
 
-  if (!validCategories.includes(category)) {
-    notFound();
-  }
+  const categoryName =
+    CATEGORY_MAP[category] ||
+    category.charAt(0).toUpperCase() + category.slice(1);
+  let articles: NewsArticle[] = [];
+  let error: string | null = null;
 
   try {
-    let articles: NewsArticle[] = [];
-    let totalResults = 0;
+    const response = await newsService.getNewsByCategory(category, sortBy);
 
-    // Use special NewsAPI methods for world category
-    if (specialCategories.includes(category)) {
-      let categoryNews;
-
-      switch (category) {
-        case "world":
-          categoryNews = await newsApi.getWorldNews(20);
-          break;
-        default:
-          throw new Error(`Unknown category: ${category}`);
-      }
-
-      articles = categoryNews.articles;
-      totalResults = categoryNews.totalResults;
+    // Check if we have articles in the response
+    if (response && response.articles && response.articles.length > 0) {
+      articles = response.articles;
     } else {
-      // Use standard NewsAPI for other categories
-      const categoryNews = await newsApi.getTopHeadlines({
-        category: category as any,
-        country: "us",
-        pageSize: 20,
-      });
-
-      articles = categoryNews.articles;
-      totalResults = categoryNews.totalResults;
+      // Handle the case where the category is valid but has no articles.
+      // We don't want a 404 page, just a message.
+      console.log(`No articles found for category: ${category}`);
     }
+  } catch (err: any) {
+    console.error(
+      `CRITICAL: Failed to fetch news for category ${category}:`,
+      err
+    );
+    error = "Could not fetch articles for this category from any source.";
+  }
 
-    const categoryTitle = category.charAt(0).toUpperCase() + category.slice(1);
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Header />
 
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+      <main className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+            {categoryName}
+          </h1>
+          <Suspense fallback={null}>
+            <SortBy />
+          </Suspense>
+        </div>
 
-        <main className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {categoryTitle} News
-            </h1>
-            <p className="text-gray-600">
-              Latest {categoryTitle.toLowerCase()} news and updates
-              {totalResults > 0 && ` (${totalResults} articles found)`}
-            </p>
+        {error && (
+          <div className="text-center py-16">
+            <h2 className="text-2xl font-semibold text-red-600">
+              Request Failed
+            </h2>
+            <p className="text-gray-600 mt-2">{error}</p>
           </div>
+        )}
 
-          {articles.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {articles.map((article: NewsArticle, index: number) => (
-                <NewsCard key={index} article={article} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12">
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                No news available
+        {!error && articles.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {articles.map((article, index) => (
+              <NewsCard key={`${article.url}-${index}`} article={article} />
+            ))}
+          </div>
+        ) : (
+          !error && (
+            <div className="text-center py-16">
+              <h2 className="text-2xl font-semibold text-gray-800">
+                No Articles Found
               </h2>
-              <p className="text-gray-600">
-                No {categoryTitle.toLowerCase()} news articles are currently
-                available.
+              <p className="text-gray-600 mt-2">
+                There are currently no articles available for this category.
+                Please check back later.
               </p>
             </div>
-          )}
-        </main>
+          )
+        )}
+      </main>
 
-        <Footer />
-      </div>
-    );
-  } catch (error) {
-    console.error("Error fetching category news:", error);
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <main className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">
-              Error Loading News
-            </h1>
-            <p className="text-gray-600">
-              Sorry, we couldn't load the category news. Please try again later.
-            </p>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
+      <Footer />
+    </div>
+  );
 }
