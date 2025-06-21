@@ -7,14 +7,15 @@ import { Search, Home } from "lucide-react";
 const SCRAPER_API_URL = "http://localhost:8000/api";
 
 const mainNavLinksConfig = [
+  "our-news",
   "world",
   "politics",
   "business",
   "sports",
   "entertainment",
-  "technology",
 ];
 const moreNavLinksConfig = [
+  "technology",
   "style",
   "travel",
   "science",

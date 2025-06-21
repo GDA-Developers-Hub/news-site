@@ -2,37 +2,12 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import NewsCard from "@/components/NewsCard";
 import { newsService, NewsArticle } from "@/lib/newsApi";
-import { notFound } from "next/navigation";
 import SortBy from "@/components/SortBy";
 import DateFilter from "@/components/DateFilter";
 import { Suspense } from "react";
 
-// The CATEGORY_MAP is now used just for display capitalization, if needed.
-const CATEGORY_MAP: { [key: string]: string } = {
-  world: "World",
-  politics: "Politics",
-  business: "Business",
-  sports: "Sports",
-  entertainment: "Entertainment",
-  technology: "Technology",
-  style: "Style",
-  travel: "Travel",
-  science: "Science",
-  climate: "Climate",
-  weather: "Weather",
-  health: "Health",
-  opinion: "Opinion",
-  general: "General",
-  crime: "Crime",
-  education: "Education",
-  environment: "Environment",
-};
-
-interface CategoryPageProps {
-  params: {
-    category: string;
-  };
-  searchParams: {
+interface OurNewsProps {
+  searchParams?: {
     sortBy?: string;
     dateRange?: string;
     from?: string;
@@ -40,42 +15,25 @@ interface CategoryPageProps {
   };
 }
 
-export default async function CategoryPage({
-  params,
-  searchParams,
-}: CategoryPageProps) {
-  const category = params.category.toLowerCase();
-
-  const { sortBy, dateRange, from, to } = searchParams;
-
-  const categoryName =
-    CATEGORY_MAP[category] ||
-    category.charAt(0).toUpperCase() + category.slice(1);
+export default async function OurNews({ searchParams }: OurNewsProps) {
+  const { sortBy, dateRange, from, to } = searchParams || {};
   let articles: NewsArticle[] = [];
   let error: string | null = null;
 
   try {
-    const response = await newsService.getNewsByCategory(category, {
+    const response = await newsService.getScrapedNews({
       sortBy,
       dateRange,
       from,
       to,
     });
 
-    // Check if we have articles in the response
     if (response && response.articles && response.articles.length > 0) {
       articles = response.articles;
-    } else {
-      // Handle the case where the category is valid but has no articles.
-      // We don't want a 404 page, just a message.
-      console.log(`No articles found for category: ${category}`);
     }
   } catch (err: any) {
-    console.error(
-      `CRITICAL: Failed to fetch news for category ${category}:`,
-      err
-    );
-    error = "Could not fetch articles for this category from any source.";
+    console.error("Failed to fetch our news:", err);
+    error = "Could not fetch articles at this time.";
   }
 
   return (
@@ -84,14 +42,18 @@ export default async function CategoryPage({
 
       <main className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-            {categoryName}
-          </h1>
-          <div className="flex space-x-4">
-            <Suspense fallback={null}>
-              <SortBy />
-            </Suspense>
+          <div>
+            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+              Our News
+            </h1>
+            <p className="text-gray-600 mt-2">
+              Curated selection of the most important stories from around the
+              world
+            </p>
           </div>
+          <Suspense fallback={null}>
+            <SortBy />
+          </Suspense>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -100,7 +62,6 @@ export default async function CategoryPage({
               <DateFilter />
             </Suspense>
           </aside>
-
           <div className="md:col-span-3">
             {error && (
               <div className="text-center py-16">
@@ -124,8 +85,8 @@ export default async function CategoryPage({
                     No Articles Found
                   </h2>
                   <p className="text-gray-600 mt-2">
-                    There are currently no articles available for this category.
-                    Try adjusting your filters.
+                    We couldn't load our curated news at this time. Try
+                    adjusting your filters.
                   </p>
                 </div>
               )

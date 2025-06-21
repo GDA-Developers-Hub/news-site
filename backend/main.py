@@ -39,18 +39,27 @@ async def startup_event():
 # --- API Endpoints ---
 
 @app.get("/api/news", response_model=List[Dict[str, Any]])
-async def get_all_news(sort_by: Optional[str] = Query('publishedAt', enum=['publishedAt', 'relevancy'])):
+async def get_all_news(
+    sort_by: Optional[str] = Query('publishedAt', enum=['publishedAt', 'publishedAt_asc', 'relevancy']),
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None
+):
     """
     Endpoint to get all news articles from the database.
     """
     try:
-        articles = database.get_articles(sort_by=sort_by)
+        articles = database.get_articles(sort_by=sort_by, from_date=from_date, to_date=to_date)
         return articles
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 @app.get("/api/news/category/{category_name}", response_model=List[Dict[str, Any]])
-async def get_news_by_category(category_name: str, sort_by: Optional[str] = Query('publishedAt', enum=['publishedAt', 'relevancy'])):
+async def get_news_by_category(
+    category_name: str, 
+    sort_by: Optional[str] = Query('publishedAt', enum=['publishedAt', 'publishedAt_asc', 'relevancy']),
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None
+):
     """
     Endpoint to get news articles for a specific category from the database.
     """
@@ -58,7 +67,12 @@ async def get_news_by_category(category_name: str, sort_by: Optional[str] = Quer
         raise HTTPException(status_code=404, detail="Category not found.")
     
     try:
-        articles = database.get_articles_by_category(category=category_name.lower(), sort_by=sort_by)
+        articles = database.get_articles_by_category(
+            category=category_name.lower(), 
+            sort_by=sort_by, 
+            from_date=from_date, 
+            to_date=to_date
+        )
         if not articles:
              # Return empty list instead of 404, as category is valid but might have no articles yet
             return []
@@ -67,14 +81,24 @@ async def get_news_by_category(category_name: str, sort_by: Optional[str] = Quer
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 @app.get("/api/search", response_model=List[Dict[str, Any]])
-async def search_news(q: str, sort_by: Optional[str] = Query('publishedAt', enum=['publishedAt', 'relevancy'])):
+async def search_news(
+    q: str, 
+    sort_by: Optional[str] = Query('publishedAt', enum=['publishedAt', 'publishedAt_asc', 'relevancy']),
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None
+):
     """
     Endpoint to search for news articles by a query string from the database.
     """
     if not q:
         raise HTTPException(status_code=400, detail="Search query cannot be empty.")
     try:
-        articles = database.search_articles(query=q, sort_by=sort_by)
+        articles = database.search_articles(
+            query=q, 
+            sort_by=sort_by,
+            from_date=from_date,
+            to_date=to_date
+        )
         return articles
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")

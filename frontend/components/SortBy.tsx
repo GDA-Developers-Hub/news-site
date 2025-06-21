@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 const sortOptions = [
   { label: "Newest", value: "publishedAt" },
+  { label: "Oldest", value: "publishedAt_asc" },
   { label: "Relevance", value: "relevancy" },
 ];
 

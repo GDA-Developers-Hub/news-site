@@ -52,14 +52,41 @@ const transformScrapedArticle = (article: any): NewsArticle => ({
   category: article.category, // Pass through category
 });
 
+interface FetchOptions {
+    sortBy?: string;
+    dateRange?: string;
+    from?: string;
+    to?: string;
+}
+
+const getFromDate = (range: string): string => {
+    const now = new Date();
+    if (range === '24h') {
+        now.setDate(now.getDate() - 1);
+    } else if (range === '7d') {
+        now.setDate(now.getDate() - 7);
+    } else if (range === '30d') {
+        now.setDate(now.getDate() - 30);
+    } else if (range === '12m') {
+        now.setFullYear(now.getFullYear() - 1);
+    }
+    return now.toISOString().split('T')[0];
+};
 
 /**
  * Primary method to fetch news from our backend scraper.
  * This is a general-purpose fetcher, but typically you'll use a more specific function.
  */
-async function getScrapedNews(sortBy: string = 'publishedAt'): Promise<NewsApiResponse> {
+async function getScrapedNews(options: FetchOptions = {}): Promise<NewsApiResponse> {
+  const { sortBy = 'publishedAt', dateRange, from, to } = options;
   try {
-    const response = await fetch(`${SCRAPER_API_URL}/news?sort_by=${sortBy}`);
+    const params = new URLSearchParams({ sort_by: sortBy });
+    const from_date = dateRange ? getFromDate(dateRange) : from;
+
+    if (from_date) params.append('from_date', from_date);
+    if (to) params.append('to_date', to);
+
+    const response = await fetch(`${SCRAPER_API_URL}/news?${params.toString()}`);
     if (!response.ok) {
       throw new Error(`Scraper API responded with status: ${response.status}`);
     }
@@ -80,10 +107,16 @@ async function getScrapedNews(sortBy: string = 'publishedAt'): Promise<NewsApiRe
  * Fetches ALL scraped news from our backend for client-side search.
  * This is intended for pages that need the full dataset.
  */
-async function getAllScrapedNews(sortBy: string = 'publishedAt'): Promise<NewsApiResponse> {
+async function getAllScrapedNews(options: FetchOptions = {}): Promise<NewsApiResponse> {
+  const { sortBy = 'publishedAt', dateRange, from, to } = options;
   try {
-    // Corrected endpoint from /news/all to /news
-    const response = await fetch(`${SCRAPER_API_URL}/news?sort_by=${sortBy}`);
+    const params = new URLSearchParams({ sort_by: sortBy });
+    const from_date = dateRange ? getFromDate(dateRange) : from;
+
+    if (from_date) params.append('from_date', from_date);
+    if (to) params.append('to_date', to);
+
+    const response = await fetch(`${SCRAPER_API_URL}/news?${params.toString()}`);
     if (!response.ok) {
       throw new Error(`Scraper API responded with status: ${response.status}`);
     }
@@ -100,9 +133,16 @@ async function getAllScrapedNews(sortBy: string = 'publishedAt'): Promise<NewsAp
 /**
  * Fetches news for a specific category from our backend scraper.
  */
-async function getNewsByCategory(category: string, sortBy: string = 'publishedAt'): Promise<NewsApiResponse> {
+async function getNewsByCategory(category: string, options: FetchOptions = {}): Promise<NewsApiResponse> {
+  const { sortBy = 'publishedAt', dateRange, from, to } = options;
   try {
-    const response = await fetch(`${SCRAPER_API_URL}/news/category/${category}?sort_by=${sortBy}`);
+    const params = new URLSearchParams({ sort_by: sortBy });
+    const from_date = dateRange ? getFromDate(dateRange) : from;
+
+    if (from_date) params.append('from_date', from_date);
+    if (to) params.append('to_date', to);
+
+    const response = await fetch(`${SCRAPER_API_URL}/news/category/${category}?${params.toString()}`);
     
     // Explicitly handle 404 from the API
     if (response.status === 404) {
@@ -127,12 +167,19 @@ async function getNewsByCategory(category: string, sortBy: string = 'publishedAt
  * @param query - The search term.
  * @param sortBy - The sorting method ('publishedAt' or 'relevancy').
  */
-async function searchNews(query: string, sortBy: string = 'publishedAt'): Promise<NewsApiResponse> {
+async function searchNews(query: string, options: FetchOptions = {}): Promise<NewsApiResponse> {
+  const { sortBy = 'publishedAt', dateRange, from, to } = options;
   if (!query) {
     return { articles: [], totalResults: 0 };
   }
   try {
-    const response = await fetch(`${SCRAPER_API_URL}/search?q=${encodeURIComponent(query)}&sort_by=${sortBy}`);
+    const params = new URLSearchParams({ q: query, sort_by: sortBy });
+    const from_date = dateRange ? getFromDate(dateRange) : from;
+
+    if (from_date) params.append('from_date', from_date);
+    if (to) params.append('to_date', to);
+
+    const response = await fetch(`${SCRAPER_API_URL}/search?${params.toString()}`);
     if (!response.ok) {
       throw new Error(`Scraper API search responded with status: ${response.status}`);
     }

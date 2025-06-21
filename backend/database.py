@@ -78,50 +78,94 @@ def dict_from_row(row: sqlite3.Row) -> Dict[str, Any]:
         return {}
     return dict(row)
 
-def get_articles(sort_by: str = 'publishedAt', limit: int = 100) -> List[Dict[str, Any]]:
-    """Retrieves all articles from the database, with sorting."""
+def get_articles(sort_by: str = 'publishedAt', limit: int = 100, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Retrieves all articles from the database, with sorting and date filtering."""
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    params = []
+    where_clauses = []
+
+    if from_date:
+        where_clauses.append("publishedAt >= ?")
+        params.append(from_date)
+    if to_date:
+        # To include the whole day, we can use '<' with the next day or just check the date part
+        where_clauses.append("publishedAt <= ?")
+        params.append(f"{to_date}T23:59:59Z")
+
+    where_sql = f"WHERE {' AND '.join(where_clauses)}" if where_clauses else ""
     
     order_clause = 'ORDER BY publishedAt DESC'
-    if sort_by == 'relevancy': # Basic relevancy - could be improved
+    if sort_by == 'relevancy':
         order_clause = 'ORDER BY title'
-        
-    cursor.execute(f"SELECT * FROM articles {order_clause} LIMIT ?", (limit,))
+    elif sort_by == 'publishedAt_asc':
+        order_clause = 'ORDER BY publishedAt ASC'
+
+    params.append(limit)
+    cursor.execute(f"SELECT * FROM articles {where_sql} {order_clause} LIMIT ?", params)
+    
     articles = [dict_from_row(row) for row in cursor.fetchall()]
     conn.close()
     return articles
 
-def get_articles_by_category(category: str, sort_by: str = 'publishedAt', limit: int = 100) -> List[Dict[str, Any]]:
-    """Retrieves articles for a specific category, with sorting."""
+def get_articles_by_category(category: str, sort_by: str = 'publishedAt', limit: int = 100, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Retrieves articles for a specific category, with sorting and date filtering."""
     conn = get_db_connection()
     cursor = conn.cursor()
+
+    params = [category]
+    where_clauses = ["category = ?"]
+
+    if from_date:
+        where_clauses.append("publishedAt >= ?")
+        params.append(from_date)
+    if to_date:
+        where_clauses.append("publishedAt <= ?")
+        params.append(f"{to_date}T23:59:59Z")
+
+    where_sql = f"WHERE {' AND '.join(where_clauses)}"
+    
+    order_clause = 'ORDER BY publishedAt DESC'
+    if sort_by == 'relevancy':
+        order_clause = 'ORDER BY title'
+    elif sort_by == 'publishedAt_asc':
+        order_clause = 'ORDER BY publishedAt ASC'
+
+    params.append(limit)
+    cursor.execute(f"SELECT * FROM articles {where_sql} {order_clause} LIMIT ?", params)
+    
+    articles = [dict_from_row(row) for row in cursor.fetchall()]
+    conn.close()
+    return articles
+
+def search_articles(query: str, sort_by: str = 'publishedAt', limit: int = 100, from_date: Optional[str] = None, to_date: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Searches for articles by title or description, with sorting and date filtering."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    search_query = f"%{query}%"
+    params = [search_query, search_query]
+    where_clauses = ["(title LIKE ? OR description LIKE ?)"]
+
+    if from_date:
+        where_clauses.append("publishedAt >= ?")
+        params.append(from_date)
+    if to_date:
+        where_clauses.append("publishedAt <= ?")
+        params.append(f"{to_date}T23:59:59Z")
+
+    where_sql = f"WHERE {' AND '.join(where_clauses)}"
 
     order_clause = 'ORDER BY publishedAt DESC'
     if sort_by == 'relevancy':
         order_clause = 'ORDER BY title'
-
-    cursor.execute(f"SELECT * FROM articles WHERE category = ? {order_clause} LIMIT ?", (category, limit))
-    articles = [dict_from_row(row) for row in cursor.fetchall()]
-    conn.close()
-    return articles
-
-def search_articles(query: str, sort_by: str = 'publishedAt', limit: int = 100) -> List[Dict[str, Any]]:
-    """Searches for articles by title or description."""
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    order_clause = 'ORDER BY publishedAt DESC'
-    if sort_by == 'relevancy': # When searching, relevancy is more complex. FTS5 would be better.
-        order_clause = 'ORDER BY title'
-
-    search_query = f"%{query}%"
-    cursor.execute(f"""
-        SELECT * FROM articles 
-        WHERE title LIKE ? OR description LIKE ?
-        {order_clause}
-        LIMIT ?
-    """, (search_query, search_query, limit))
+    elif sort_by == 'publishedAt_asc':
+        order_clause = 'ORDER BY publishedAt ASC'
+        
+    params.append(limit)
+    cursor.execute(f"SELECT * FROM articles {where_sql} {order_clause} LIMIT ?", params)
+    
     articles = [dict_from_row(row) for row in cursor.fetchall()]
     conn.close()
     return articles 
